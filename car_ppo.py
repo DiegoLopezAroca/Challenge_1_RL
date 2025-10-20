@@ -3,7 +3,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
 
 # Configuration parameters
-env_name = "CarRacing-v2"  # Environment name
+env_name = "CarRacing-v3"  # Environment name
 n_steps = 200_000  # Number of training steps (increased to observe the effect of hyperparameters)
 checkpoint_dir = './checkpoints/'  # Directory to save checkpoints
 
