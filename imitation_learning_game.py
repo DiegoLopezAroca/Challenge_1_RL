@@ -4,20 +4,40 @@ from gymnasium.envs.box2d.car_racing import CarRacing
 from PIL import Image
 import os
 
-num_episodios = 1   
-fps = 50              
+# ----------------------------
+# CONFIGURACIÓN
+# ----------------------------
+num_episodios = 2      # Número de episodios nuevos a grabar
+fps = 50               
 save_npy = "expert_data.npy"
-save_frames = True    
-frames_dir = "frames"  
+save_frames = True     
+frames_dir = "frames"
 
-
+# ----------------------------
+# INICIALIZACIÓN
+# ----------------------------
 env = CarRacing(render_mode="human")
 clock = pygame.time.Clock()
-expert_data = [] # Los expert data van a ser nuestros episodios jugando al car-racing
 
+#cargar episodios previos si existen
+if os.path.exists(save_npy):
+    expert_data = list(np.load(save_npy, allow_pickle=True))
+    start_ep = len(expert_data)
+    print(f"Cargados {start_ep} episodios previos. Continuando desde ep{start_ep}.")
+else:
+    expert_data = []
+    start_ep = 0
+    print("No existe dataset previo. Comenzando desde cero.")
+
+# Crear carpeta raíz de frames si no existe
 if save_frames:
     os.makedirs(frames_dir, exist_ok=True)
 
+print("Usa flechas para conducir. Q o ESC para salir.")
+
+# ----------------------------
+# FUNCIONES DE TECLADO → ACCIÓN
+# ----------------------------
 def get_keyboard_action():
     keys = pygame.key.get_pressed()
     steering = 0.0
@@ -29,21 +49,24 @@ def get_keyboard_action():
     brake = 1.0 if keys[pygame.K_DOWN] else 0.0
     return np.array([steering, gas, brake], dtype=np.float32)
 
-
-for ep in range(num_episodios):
+# ----------------------------
+# RECOLECCIÓN DE DATOS
+# ----------------------------
+for ep in range(start_ep, start_ep + num_episodios):
     obs, _ = env.reset()
     done = False
     step = 0
-    frames_episode = []  
+    frames_episode = []
 
+    # Crear carpeta para este nuevo episodio
     ep_dir = os.path.join(frames_dir, f"ep{ep}")
     os.makedirs(ep_dir, exist_ok=True)
-    
+
     txt_path = os.path.join(ep_dir, f"acciones_ep{ep}.txt")
     with open(txt_path, "w") as f:
         f.write("step steering gas brake\n")
 
-    print(f"Episodio {ep+1}/{num_episodios}")
+    print(f"Jugando episodio {ep+1}...")
 
     while not done:
         for event in pygame.event.get():
@@ -54,7 +77,6 @@ for ep in range(num_episodios):
                     done = True
 
         action = get_keyboard_action()
-
         next_obs, reward, terminated, truncated, info = env.step(action)
         done = terminated or truncated
 
@@ -69,19 +91,19 @@ for ep in range(num_episodios):
 
     expert_data.append(frames_episode)
 
-    # Guardar frames como PNG si se desea
+    # Guardar frames como PNG
     if save_frames:
         for s, (frame_obs, _) in enumerate(frames_episode):
             Image.fromarray(frame_obs).save(f"{ep_dir}/step{s:05d}.png")
 
-    # Guardar dataset parcial en .npy con dtype=object y allow_pickle
+    # Guardar dataset acumulado
     np.save(save_npy, np.array(expert_data, dtype=object), allow_pickle=True)
-    print(f"Episodio {ep+1} guardado. Total episodios: {len(expert_data)}")
+    print(f"Episodio {ep} guardado (total: {len(expert_data)} episodios)")
 
 # ----------------------------
 # CIERRE
 # ----------------------------
 env.close()
-print(f"✅ Guardado {len(expert_data)} episodios en {save_npy}")
+print(f"Guardados {len(expert_data)} episodios en {save_npy}")
 if save_frames:
-    print(f"✅ Frames y txt por episodio guardados en '{frames_dir}'")
+    print(f"Frames y txt guardados en '{frames_dir}'")
