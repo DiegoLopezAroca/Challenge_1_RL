@@ -7,7 +7,7 @@ import os
 # ----------------------------
 # CONFIGURACIÓN
 # ----------------------------
-num_episodios = 2      # Número de episodios nuevos a grabar
+num_episodios = 1      # Número de episodios nuevos a grabar
 fps = 50               
 save_npy = "expert_data.npy"
 save_frames = True     
