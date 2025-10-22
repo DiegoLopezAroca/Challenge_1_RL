@@ -10,8 +10,8 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 
 # ---------- Config ----------
-NPY_PATH = "/home/diego/RL/Challenge_1_RL/Unai/expert_data.npy"   # tu archivo
-STACK = 4                      # nº de frames apilados (historia). Pon 1 si no quieres apilar
+NPY_PATH = "/home/diego/RL/Challenge_1_RL/Unai/expert_data.npy"
+STACK = 4                      # nº de frames apilados
 BATCH_SIZE = 128
 LR = 1e-4
 EPOCHS = 20
@@ -69,12 +69,6 @@ class BCDataset(Dataset):
         else:
             idxs = idxs[val_count:]
 
-        # Preprocesamos y además preconstruimos una deques por episodio para stacking.
-        # Como perdimos la noción de episodios arriba, implementamos un stack "local":
-        # usamos un buffer FIFO que se resetea cuando detectemos un corte (no detectable aquí).
-        # Alternativa robusta: construir ejemplos con stack dentro del bucle de episodios ANTES
-        # de mezclar. Para simplicidad, haremos prox: para cada índice, repetimos el frame actual
-        # K veces si no hay historia previa suficiente.
         self.frames: List[np.ndarray] = []
         self.actions: List[np.ndarray] = []
         self.stack = stack
@@ -95,9 +89,6 @@ class BCDataset(Dataset):
             self.frames.append(img.astype(np.float32))
             self.actions.append(act.astype(np.float32))
 
-        # Para stacking “sintético”, duplicamos el frame actual K veces (baseline sólida)
-        # Si quieres un stack real secuencial, construye el dataset episodio por episodio.
-        # (Te dejo abajo una versión alternativa por episodio)
     def __len__(self):
         return len(self.frames)
 
